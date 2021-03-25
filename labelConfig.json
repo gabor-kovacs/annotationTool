@@ -1,0 +1,58 @@
+{
+    "labels": {
+        "void": {
+            "color": [
+                255,
+                255,
+                255
+            ],
+            "id": 0,
+            "name": "void"
+        },
+          "road": {
+            "color": [
+                170,
+                170,
+                170
+            ],
+            "id": 1,
+            "name": "road"
+        },
+            "grass": {
+            "color": [
+                0,
+                255,
+                0
+            ],
+            "id": 2,
+            "name": "grass"
+        },
+            "vegetation": {
+            "color": [
+                102,
+                102,
+                51
+            ],
+            "id": 3,
+            "name": "vegetation"
+        },
+            "sky": {
+            "color": [
+                0,
+                120,
+                255
+            ],
+            "id": 4,
+            "name": "sky"
+        },
+            "obstacle": {
+            "color": [
+                0,
+                0,
+                0
+            ],
+            "id": 5,
+            "name": "obstacle"
+        }
+    }
+}
