@@ -1,42 +1,50 @@
-import numpy as np
-import os
 import glob
+import os
+
 import cv2
-from progress.bar import Bar
-
-void        = [255,255,255]   # id: 0
-road        = [170,170,170]   # id: 1
-grass       = [0,255,0]       # id: 2
-vegetation  = [51,102,102]    # id: 3
-sky         = [255,120,0]     # id: 4
-obstacle    = [0,0,0]         # id: 5
+import numpy as np
+from tqdm import tqdm
 
 
-predictionImagePaths = glob.glob('./predictions/*pred.png')
-bar = Bar('Processing', max=len(predictionImagePaths))
+def convert_prediction_to_1ch(img):
+    """
+    Converts colored prediction into one channel prediction ready to use with PixelAnnotationTool
 
-for PredictionImagePath in predictionImagePaths:
-  PredictionImage = cv2.imread(PredictionImagePath)
+    :param img: prediction image (BGR)
+    :return: 1 channel label image
+    """
 
-  fileIndex = (os.path.splitext(os.path.basename(PredictionImagePath))[0]).split('_pred')[0]
+    # Freiburg forest mapping from RBG to class id
+    rgb_to_label_id = {
+        (255, 255, 255): 0,  # Void
+        (170, 170, 170): 1,  # Road
+        (0, 255, 0): 2,  # Grass
+        (102, 102, 51): 3,  # Vegetation
+        (0, 60, 0): 3,  # Tree
+        (0, 120, 255): 4,  # Sky
+        (0, 0, 0): 5,  # Obstacle
+    }
 
-  height = PredictionImage.shape[0]
-  width = PredictionImage.shape[1]
-  watershedImage = np.zeros((height,width,3), np.uint8)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    out = np.zeros(img.shape[:2], dtype=np.uint8)
+    for k, v in rgb_to_label_id.items():
+        out[(img == k).all(axis=2)] = v
+    return out
 
-  for y in range(0, height):
-    for x in range(0, width):
-      if (PredictionImage[y, x] == void).all():           watershedImage[y, x] = [0,0,0]
-      if (PredictionImage[y, x] == road).all():           watershedImage[y, x] = [1,1,1]
-      if (PredictionImage[y, x] == grass).all():          watershedImage[y, x] = [2,2,2]
-      if (PredictionImage[y, x] == vegetation).all():     watershedImage[y, x] = [3,3,3]
-      if (PredictionImage[y, x] == sky).all():            watershedImage[y, x] = [4,4,4]
-      if (PredictionImage[y, x] == obstacle).all():       watershedImage[y, x] = [5,5,5]
-     
-  manualImage = watershedImage.copy()
 
-  cv2.imwrite('images/' + fileIndex + '_rgb_mask.png', manualImage)
-  cv2.imwrite('images/' + fileIndex + '_rgb_watershed_mask.png', watershedImage)
-  bar.next()
-  
-bar.finish()
+# Iterate over all prediction images in folder 'predictions'
+pred_image_paths = glob.glob('./predictions/*pred.png')
+for pred_image_path in tqdm(pred_image_paths):
+    # Read prediction image
+    pred_image = cv2.imread(pred_image_path)
+
+    # Extract file index to later name the output
+    file_index = (os.path.splitext(os.path.basename(pred_image_path))[0]).split('_')[0]
+
+    # Covert colored prediction to 1 channel
+    watershed_image = convert_prediction_to_1ch(pred_image)
+    manual_image = watershed_image.copy()
+
+    # Write output on disk with the appropriate filename
+    cv2.imwrite('images/' + file_index + '_rgb_mask.png', manual_image)
+    cv2.imwrite('images/' + file_index + '_rgb_watershed_mask.png', watershed_image)
